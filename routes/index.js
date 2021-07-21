@@ -63,11 +63,11 @@ router.post('/newCatalog', upload.single('photos'), function (req, res, next) {
     res.status(400).send("Error: No files found")
   } else {
 
-    
-    //    cap nhat firestore
+    console.log(req.protocol + req.hostname + req.file.path.substring(6))
+    // cap nhat firestore
     admin.firestore().collection("excercises").doc(id).set({
       name: data.name,
-      photoUrl: req.hostname + req.file.path.substring(6)
+      photoUrl: "https://" + req.hostname + req.file.path.substring(6)
     })
       .then(() => {
         console.log("Tao moi catalog thanh cong")
