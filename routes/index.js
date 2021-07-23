@@ -247,7 +247,7 @@ router.post('/newExcercise', upload.array('picSteps'), function (req, res, next)
 
 });
 
-router.post('/updateExcercise', upload.array('picSteps'), function (req, res, next) {
+router.put('/updateExcercise', upload.array('picSteps'), function (req, res, next) {
   // chuan bi data
   let data = req.body
   let id = data.id
@@ -485,7 +485,148 @@ router.delete('/deleteNutritionCatalog', function (req, res, next) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// nutrition menu
 
-// lam sau
+router.get('/menuList', function (req, res, next) {
+  let data = req.query
+  admin.firestore().collection("nutrition").doc(data.nutriId).collection("menuList").get().then((querySnapshot) => {
+    var arr = []
+    querySnapshot.forEach((doc) => {
+      console.log(doc.id, " => ", doc.data());
+      arr.push(doc.data())
+    });
+    res.end(JSON.stringify(arr))
+
+  }).catch((error) => {
+    console.log("Error getting documents: ", error);
+    res.status(500).json({ error: 'something is wrong' })
+    res.end()
+  });
+});
+
+router.post('/newMenu', upload.array('pics'), function (req, res, next) {
+  console.log("vao ham")
+  // chuan bi data
+  let data = req.body
+  if (!req.files) {
+    res.status(400).send("Error: No files found")
+  } else {
+    var imgUrls = []
+    req.files.forEach(img => imgUrls.push("https://" + req.hostname + img.path.substring(6)))
+    let menuListRef = admin.firestore().collection("nutrition").doc(data.nutriId).collection("menuList")
+    menuListRef.add({
+      breakfast: data.breakfast,
+      picUrls: imgUrls,
+      lunch: data.lunch,
+      dinner: data.dinner,
+      snack: data.snack,
+      other: data.other
+    })
+      .then((menuRef) => {
+        res.end(JSON.stringify({ id: menuRef.id }))
+      })
+      .catch((error) => {
+        console.error("Loi tao moi menu: ", error)
+        req.files.forEach(item => {
+          fs.unlinkSync("./" + item.path)
+        })
+        res.status(500).json({ error: 'loi tao menu' })
+        res.end()
+      });
+  }
+});
+
+router.put('/updateMenu', upload.array('pics'), function (req, res, next) {
+  // chuan bi data
+  let data = req.body
+  let id = data.id
+
+  console.log(imgUrls)
+  if (!req.files) {
+    res.status(400).send("Error: No files found")
+  } else {
+    var imgUrls = []
+    req.files.forEach(img => imgUrls.push("https://" + req.hostname + img.path.substring(6)))
+    // cap nhat firestore
+    let excerciseRef = admin.firestore().collection("nutrition").doc(data.nutriId).collection("menuList").doc(id)
+    excerciseRef.get().then((doc) => {
+      if (!doc.exists) {
+        console.log('No such document!---------');
+        req.files.forEach(item => {
+          fs.unlinkSync("./" + item.path)
+        })
+        res.status(400).send("Error: No nutrition")
+      } else {
+        var oldPhotoPaths = []
+        var photoUrls = doc.data().picUrls
+        photoUrls.forEach(url => oldPhotoPaths.push('./public/data/uploads/' + url.substring(url.indexOf("uploads/") + 8)))
+        console.log(oldPhotoPaths)
+        try {
+          excerciseRef.update({
+            breakfast: data.breakfast,
+            picUrls: imgUrls,
+            lunch: data.lunch,
+            dinner: data.dinner,
+            snack: data.snack,
+            other: data.other
+          }) // chua lam then
+
+          oldPhotoPaths.forEach(ptPath => fs.unlinkSync(ptPath))
+          //file removed
+
+          res.end(JSON.stringify({ id: data.id }))
+        } catch (err) {
+          console.error(err)
+          req.files.forEach(item => {
+            fs.unlinkSync("./" + item.path)
+          })
+          res.status(500).json({ error: 'loi cap nhat firestore' })
+          res.end()
+        }
+      }
+    }).catch((error) => {
+      console.log("Error getting document:", error);
+      req.files.forEach(item => {
+        fs.unlinkSync("./" + item.path)
+      })
+      res.status(500).json({ error: 'loi khong doc duoc firestore' })
+      res.end()
+    });
+  }
+});
+
+router.delete('/deleteMenu', function (req, res, next) {
+  let id = req.query.id
+  let nutriId = req.query.nutriId
+  // kiem tra ton tai
+  let menuRef = admin.firestore().collection("nutrition").doc(nutriId).collection("menuList").doc(id)
+  menuRef.get().then((doc) => {
+    if (!doc.exists) {
+      res.status(400).send("Error: No Menu")
+    } else {
+      menuRef.delete().then(() => {
+        try {
+          var oldPhotoPaths = []
+          var photoUrls = doc.data().picUrls
+          photoUrls.forEach(url => oldPhotoPaths.push('./public/data/uploads/' + url.substring(url.indexOf("uploads/") + 8)))
+          oldPhotoPaths.forEach(ptPath => fs.unlinkSync(ptPath))
+          res.end(JSON.stringify({ id: id }))
+        } catch (err) {
+          console.log(err)
+          res.status(500).json({ error: 'loi unlink' })
+          res.end()
+        }
+      }).catch((error) => {
+        res.status(500).json({ error: 'loi xoa catalog' })
+        res.end()
+      });
+
+    }
+  }).catch((error) => {
+    res.status(500).json({ error: 'loi khong doc duoc firestore' })
+    res.end()
+  });
+
+});
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// session
 router.get('/userSessions', function (req, res, next) {
@@ -801,7 +942,100 @@ router.delete('/deleteUserStatHistory', function (req, res, next) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// user_step
 
+router.get('/userStep', function (req, res, next) {
+  let uid = req.query.uid
+  admin.firestore().collection("user").doc(uid).collection("stepHistory").get().then((querySnapshot) => {
+    var arr = []
+    querySnapshot.forEach((doc) => {
+      console.log(doc.id, " => ", doc.data());
+      arr.push(doc.data())
+    });
+    res.end(JSON.stringify(arr))
+  }).catch((error) => {
+    console.log("Error getting documents: ", error);
+    res.status(500).json({ error: 'something is wrong' })
+    res.end()
+  });
+});
 
+router.post('/newUserStep', function (req, res, next) {
+  let data = req.body
+  let uid = data.uid
+  // check uid da co chua
+  let userRef = admin.firestore().collection("user").doc(uid)
+  userRef.get().then((doc) => {
+    if (doc.exists) {
+      let statsRef = admin.firestore().collection("user").doc(uid).collection("stepHistory")
+      statsRef.add({
+        dateString: data.dateString,
+        steps: parseInt(data.steps)
+      })
+        .then((sessionRef) => {
+          console.log("Tao moi steps thanh cong")
+          res.end(JSON.stringify({ id: sessionRef.id }))
+        })
+        .catch((error) => {
+          console.error("Loi tao moi steps cua user: ", error)
+          res.status(500).json({ error: 'loi' })
+          res.end()
+        });
+    } else {
+      res.status(500).json({ error: 'user khong ton tai' })
+      res.end()
+    }
+  })
+
+});
+
+router.put('/updateUserStep', function (req, res, next) {
+  // chuan bi data
+  let data = req.body
+  // cap nhat firestore
+  let statRef = admin.firestore().collection("user").doc(data.uid).collection("stepHistory").doc(data.stepId)
+  statRef.get().then((doc) => {
+    if (!doc.exists) {
+      console.log('No such document!');
+      res.status(400).send("Error: No stepHistory")
+    } else {
+      statRef.update({
+        dateString: data.dateString,
+        steps: parseInt(data.steps)
+      }).then(() => {
+        res.end(JSON.stringify({ id: data.stepId }))
+      }).catch((error) => {
+        console.error(err)
+        res.status(500).json({ error: 'loi cap nhat stepHistory' })
+        res.end()
+      })
+    }
+  }).catch((error) => {
+    console.log("Error getting document:", error);
+    res.status(500).json({ error: 'loi khong doc duoc firestore' })
+    res.end()
+  });
+});
+
+router.delete('/deleteUserStep', function (req, res, next) {
+  let data = req.query
+  // kiem tra ton tai
+  let sessionRef = admin.firestore().collection("user").doc(data.uid).collection("stepHistory").doc(data.stepId)
+  sessionRef.get().then((doc) => {
+    if (!doc.exists) {
+      res.status(400).send("Error: No stepHistory")
+    } else {
+      sessionRef.delete().then(() => {
+        res.end(JSON.stringify({ id: data.stepId }))
+      }).catch((error) => {
+        res.status(500).json({ error: 'loi xoa stepHistory firestore' })
+        res.end()
+      });
+    }
+  }).catch((error) => {
+    res.status(500).json({ error: 'loi khong doc duoc firestore' })
+    res.end()
+  });
+
+});
 
 
 module.exports = router;
