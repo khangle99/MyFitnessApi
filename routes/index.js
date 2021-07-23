@@ -5,7 +5,8 @@ var admin = require('firebase-admin');
 var path = require('path');
 var serviceAccount = require("../serviceAccountKey.json");
 var multer = require('multer')
-const fs = require('fs')
+const fs = require('fs');
+const { timeStamp } = require('console');
 var upload = multer({
   dest: './public/data/uploads/',
   limits: { fileSize: 50 * 1024 * 1024 },
@@ -22,22 +23,17 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
-/////// catalog
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// catalog
 router.get('/excercisesCatalog', function (req, res, next) {
 
   admin.firestore().collection("excercises").get().then((querySnapshot) => {
-    if (querySnapshot.exists) {
-      var arr = []
-      querySnapshot.forEach((doc) => {
-        console.log(doc.id, " => ", doc.data());
-        arr.push(doc.data())
-      });
+    var arr = []
+    querySnapshot.forEach((doc) => {
+      console.log(doc.id, " => ", doc.data());
+      arr.push(doc.data())
+    });
 
-      res.end(JSON.stringify(arr))
-    } else {
-      res.status(500).json({ error: 'Khong ton tai id nay' })
-      res.end()
-    }
+    res.end(JSON.stringify(arr))
 
   }).catch((error) => {
     console.log("Error getting documents: ", error);
@@ -182,20 +178,16 @@ router.delete('/deleteCatalog', function (req, res, next) {
 });
 
 
-/////////////// ex_list
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// ex_list
 router.get('/excercises', function (req, res, next) {
   let data = req.query
   admin.firestore().collection("excercises").doc(data.catalogId).collection("ex_list").get().then((querySnapshot) => {
-    if (querySnapshot.exists) {
-      var arr = []
-      querySnapshot.forEach((doc) => {
-        console.log(doc.id, " => ", doc.data());
-        arr.push(doc.data())
-      });
-      res.end(JSON.stringify(arr))
-    } else {
-      res.end(JSON.stringify({ error: "khong ton tai catalog id" }))
-    }
+    var arr = []
+    querySnapshot.forEach((doc) => {
+      console.log(doc.id, " => ", doc.data());
+      arr.push(doc.data())
+    });
+    res.end(JSON.stringify(arr))
 
   }).catch((error) => {
     console.log("Error getting documents: ", error);
@@ -352,21 +344,16 @@ router.delete('/deleteExcercise', function (req, res, next) {
 
 });
 
-//// nutrition
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// nutrition
 router.get('/nutritionCategory', function (req, res, next) {
   admin.firestore().collection("nutrition").get().then((querySnapshot) => {
-    if (querySnapshot.exists) {
-      var arr = []
-      querySnapshot.forEach((doc) => {
-        console.log(doc.id, " => ", doc.data());
-        arr.push(doc.data())
-      });
+    var arr = []
+    querySnapshot.forEach((doc) => {
+      console.log(doc.id, " => ", doc.data());
+      arr.push(doc.data())
+    });
 
-      res.end(JSON.stringify(arr))
-    } else {
-      res.status(500).json({ error: 'Khong ton tai id nay' })
-      res.end()
-    }
+    res.end(JSON.stringify(arr))
 
   }).catch((error) => {
     console.log("Error getting documents: ", error);
@@ -466,7 +453,6 @@ router.put('/updateNutritionCatalog', upload.single('photo'), function (req, res
   }
 });
 
-
 router.delete('/deleteNutritionCatalog', function (req, res, next) {
   let id = req.query.id
   // kiem tra ton tai
@@ -495,27 +481,22 @@ router.delete('/deleteNutritionCatalog', function (req, res, next) {
     res.status(500).json({ error: 'loi khong doc duoc firestore' })
     res.end()
   });
-
 });
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// nutrition menu
 
-////// session
-router.get('/user_session', function (req, res, next) {
+// lam sau
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// session
+router.get('/userSessions', function (req, res, next) {
   let uid = req.query.uid
   admin.firestore().collection("user").doc(uid).collection("sessions").get().then((querySnapshot) => {
-    if (querySnapshot.exists) {
-      var arr = []
-      querySnapshot.forEach((doc) => {
-        console.log(doc.id, " => ", doc.data());
-        arr.push(doc.data())
-      });
-
-      res.end(JSON.stringify(arr))
-    } else {
-      res.status(500).json({ error: 'Khong ton tai id nay' })
-      res.end()
-    }
-
+    var arr = []
+    querySnapshot.forEach((doc) => {
+      console.log(doc.id, " => ", doc.data());
+      arr.push(doc.data())
+    });
+    res.end(JSON.stringify(arr))
   }).catch((error) => {
     console.log("Error getting documents: ", error);
     res.status(500).json({ error: 'something is wrong' })
@@ -524,35 +505,47 @@ router.get('/user_session', function (req, res, next) {
 });
 
 router.post('/newSession', function (req, res, next) {
-  // check uid da co chua
-
-  // chuan bi data
   let data = req.body
   let uid = data.uid
-  let sessionsRef = admin.firestore().collection("user").doc(uid).collection("sessions")
-  sessionsRef.add({
-    name: data.name,
-    time: "00:00"
-  })
-    .then((sessionRef) => {
-      console.log("Tao moi session thanh cong")
-      res.end(JSON.stringify({ id: sessionRef.id }))
+  // check uid da co chua
+  checkUserExist(uid, res, () => {
+    let sessionsRef = admin.firestore().collection("user").doc(uid).collection("sessions")
+    sessionsRef.add({
+      name: data.name,
+      time: "00:00"
     })
-    .catch((error) => {
-      console.error("Loi tao moi session cua user: ", error)
-      res.status(500).json({ error: 'loi' })
-      res.end()
-    });
-
+      .then((sessionRef) => {
+        console.log("Tao moi session thanh cong")
+        res.end(JSON.stringify({ id: sessionRef.id }))
+      })
+      .catch((error) => {
+        console.error("Loi tao moi session cua user: ", error)
+        res.status(500).json({ error: 'loi' })
+        res.end()
+      });
+  })
 
 });
 
+function checkUserExist(uid, res, handle) {
+  admin.firestore().collection("user").doc(uid).get().then((doc) => {
+    if (!doc.exists) {
+      console.log("khong ton tai user ")
+      res.status(500).json({ error: 'khong ton tai user' })
+      res.end()
+    } else {
+      handle()
+    }
+  })
+}
+
 
 router.put('/updateSession', function (req, res, next) {
+
   // chuan bi data
   let data = req.body
   // cap nhat firestore
-  let sessionRef = admin.firestore().collection("user").doc(data.uid).collection("sessions").doc(data.sid)
+  let sessionRef = admin.firestore().collection("user").doc(data.uid).collection("sessions").doc(data.sessionId)
   sessionRef.get().then((doc) => {
     if (!doc.exists) {
       console.log('No such document!');
@@ -561,7 +554,7 @@ router.put('/updateSession', function (req, res, next) {
       sessionRef.update({
         name: data.name
       }).then(() => {
-        res.end(JSON.stringify({ id: data.sid }))
+        res.end(JSON.stringify({ id: data.sessionId }))
       }).catch((error) => {
         console.error(err)
         res.status(500).json({ error: 'loi cap nhat session' })
@@ -575,17 +568,16 @@ router.put('/updateSession', function (req, res, next) {
   });
 });
 
-
 router.delete('/deleteSession', function (req, res, next) {
   let data = req.query
   // kiem tra ton tai
-  let sessionRef = admin.firestore().collection("user").doc(data.uid).collection("sessions").doc(data.sid)
+  let sessionRef = admin.firestore().collection("user").doc(data.uid).collection("sessions").doc(data.sessionId)
   sessionRef.get().then((doc) => {
     if (!doc.exists) {
       res.status(400).send("Error: No Session")
     } else {
       sessionRef.delete().then(() => {
-        res.end(JSON.stringify({ id: data.sid }))
+        res.end(JSON.stringify({ id: data.sessionId }))
       }).catch((error) => {
         res.status(500).json({ error: 'loi xoa catalog firestore' })
         res.end()
@@ -598,8 +590,216 @@ router.delete('/deleteSession', function (req, res, next) {
 
 });
 
-///// user_ex
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// user_ex
+router.get('/userExcercise', function (req, res, next) {
+  let uid = req.query.uid
+  let sessionId = req.query.sessionId
+  admin.firestore().collection("user").doc(uid).collection("sessions").doc(sessionId).collection("ex_list").get().then((querySnapshot) => {
+    var arr = []
+    querySnapshot.forEach((doc) => {
+      console.log(doc.id, " => ", doc.data());
+      arr.push(doc.data())
+    });
+    res.end(JSON.stringify(arr))
+  }).catch((error) => {
+    console.log("Error getting documents: ", error);
+    res.status(500).json({ error: 'something is wrong' })
+    res.end()
+  });
+});
 
+router.post('/newUserExc', function (req, res, next) {
+  let data = req.body
+  let uid = data.uid
+  let sessionID = data.sessionID
+  // check uid da co chua
+  let sessListRef = admin.firestore().collection("user").doc(uid).collection("sessions").doc(sessionID)
+  sessListRef.get().then((doc) => {
+    if (doc.exists) {
+      let userExRef = admin.firestore().collection("user").doc(uid).collection("sessions").doc(sessionID).collection("ex_list")
+      userExRef.add({
+        name: data.name,
+        noTurn: parseInt(data.noTurn),
+        noSec: parseInt(data.noSec),
+        noGap: parseInt(data.noGap),
+        autoplay: JSON.parse(data.autoplay)
+      })
+        .then((exRef) => {
+          console.log("Tao moi session thanh cong")
+          res.end(JSON.stringify({ id: exRef.id }))
+        })
+        .catch((error) => {
+          console.error("Loi tao moi session cua user: ", error)
+          res.status(500).json({ error: 'loi' })
+          res.end()
+        });
+    } else {
+      console.error("user hoac session khong ton tai: ", error)
+      res.status(500).json({ error: 'user hoac session khong ton tai' })
+      res.end()
+    }
+  }).catch((error) => {
+    console.error("Loi doc session: ", error)
+    res.status(500).json({ error: 'loi doc session' })
+    res.end()
+  })
+
+});
+
+router.put('/updateUserExc', function (req, res, next) {
+
+  // chuan bi data
+  let data = req.body
+  // cap nhat firestore
+  let excRef = admin.firestore().collection("user").doc(data.uid).collection("sessions").doc(data.sessionID).collection("ex_list").doc(data.id)
+  excRef.get().then((doc) => {
+    if (!doc.exists) {
+      console.log('No such document!');
+      res.status(400).send("Error: No Excercise")
+    } else {
+      excRef.update({
+        name: data.name,
+        noTurn: parseInt(data.noTurn),
+        noSec: parseInt(data.noSec),
+        noGap: parseInt(data.noGap),
+        autoplay: JSON.parse(data.autoplay)
+      }).then(() => {
+        res.end(JSON.stringify({ id: data.id }))
+      }).catch((error) => {
+        console.error(err)
+        res.status(500).json({ error: 'loi cap nhat excercise' })
+        res.end()
+      })
+    }
+  }).catch((error) => {
+    console.log("Error getting document:", error);
+    res.status(500).json({ error: 'loi khong doc duoc firestore' })
+    res.end()
+  });
+});
+
+router.delete('/deleteUserExc', function (req, res, next) {
+  let data = req.query
+  // kiem tra ton tai
+  let excsRef = admin.firestore().collection("user").doc(data.uid).collection("sessions").doc(data.sessionId).collection("ex_list").doc(data.id)
+  excsRef.get().then((doc) => {
+    if (!doc.exists) {
+      res.status(400).send("Error: No Exc")
+    } else {
+      excsRef.delete().then(() => {
+        res.end(JSON.stringify({ id: data.sessionId }))
+      }).catch((error) => {
+        res.status(500).json({ error: 'loi xoa exc firestore' })
+        res.end()
+      });
+    }
+  }).catch((error) => {
+    res.status(500).json({ error: 'loi khong doc duoc firestore' })
+    res.end()
+  });
+});
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// user_stat
+
+router.get('/userStatHistory', function (req, res, next) {
+  let uid = req.query.uid
+  admin.firestore().collection("user").doc(uid).collection("statsHistory").get().then((querySnapshot) => {
+    var arr = []
+    querySnapshot.forEach((doc) => {
+      console.log(doc.id, " => ", doc.data());
+      arr.push(doc.data())
+    });
+    res.end(JSON.stringify(arr))
+  }).catch((error) => {
+    console.log("Error getting documents: ", error);
+    res.status(500).json({ error: 'something is wrong' })
+    res.end()
+  });
+});
+
+router.post('/newUserStatHistory', function (req, res, next) {
+  let data = req.body
+  let uid = data.uid
+  // check uid da co chua
+  let userRef = admin.firestore().collection("user").doc(uid)
+  userRef.get().then((doc) => {
+    if (doc.exists) {
+      let statsRef = admin.firestore().collection("user").doc(uid).collection("statsHistory")
+      statsRef.add({
+        dateString: data.dateString,
+        weight: parseInt(data.weight),
+        height: parseInt(data.height)
+      })
+        .then((sessionRef) => {
+          console.log("Tao moi stats thanh cong")
+          res.end(JSON.stringify({ id: sessionRef.id }))
+        })
+        .catch((error) => {
+          console.error("Loi tao moi stats cua user: ", error)
+          res.status(500).json({ error: 'loi' })
+          res.end()
+        });
+    } else {
+      res.status(500).json({ error: 'user khong ton tai' })
+      res.end()
+    }
+  })
+
+});
+
+router.put('/updateUserStatHistory', function (req, res, next) {
+  // chuan bi data
+  let data = req.body
+  // cap nhat firestore
+  let statRef = admin.firestore().collection("user").doc(data.uid).collection("statsHistory").doc(data.statId)
+  statRef.get().then((doc) => {
+    if (!doc.exists) {
+      console.log('No such document!');
+      res.status(400).send("Error: No stat")
+    } else {
+      statRef.update({
+        dateString: data.dateString,
+        weight: parseInt(data.weight),
+        height: parseInt(data.height)
+      }).then(() => {
+        res.end(JSON.stringify({ id: data.statId }))
+      }).catch((error) => {
+        console.error(err)
+        res.status(500).json({ error: 'loi cap nhat stat' })
+        res.end()
+      })
+    }
+  }).catch((error) => {
+    console.log("Error getting document:", error);
+    res.status(500).json({ error: 'loi khong doc duoc firestore' })
+    res.end()
+  });
+});
+
+router.delete('/deleteUserStatHistory', function (req, res, next) {
+  let data = req.query
+  // kiem tra ton tai
+  let sessionRef = admin.firestore().collection("user").doc(data.uid).collection("statsHistory").doc(data.statId)
+  sessionRef.get().then((doc) => {
+    if (!doc.exists) {
+      res.status(400).send("Error: No statsHistory")
+    } else {
+      sessionRef.delete().then(() => {
+        res.end(JSON.stringify({ id: data.statId }))
+      }).catch((error) => {
+        res.status(500).json({ error: 'loi xoa statsHistory firestore' })
+        res.end()
+      });
+    }
+  }).catch((error) => {
+    res.status(500).json({ error: 'loi khong doc duoc firestore' })
+    res.end()
+  });
+
+});
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// user_step
 
 
 
