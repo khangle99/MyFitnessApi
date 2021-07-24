@@ -30,7 +30,9 @@ router.get('/excercisesCatalog', function (req, res, next) {
     var arr = []
     querySnapshot.forEach((doc) => {
       console.log(doc.id, " => ", doc.data());
-      arr.push(doc.data())
+      var ob = doc.data()
+      ob.id = doc.id
+      arr.push(ob)
     });
 
     res.end(JSON.stringify(arr))
@@ -185,7 +187,9 @@ router.get('/excercises', function (req, res, next) {
     var arr = []
     querySnapshot.forEach((doc) => {
       console.log(doc.id, " => ", doc.data());
-      arr.push(doc.data())
+      var ob = doc.data()
+      ob.id = doc.id
+      arr.push(ob)
     });
     res.end(JSON.stringify(arr))
 
@@ -350,7 +354,9 @@ router.get('/nutritionCategory', function (req, res, next) {
     var arr = []
     querySnapshot.forEach((doc) => {
       console.log(doc.id, " => ", doc.data());
-      arr.push(doc.data())
+      var ob = doc.data()
+      ob.id = doc.id
+      arr.push(ob)
     });
 
     res.end(JSON.stringify(arr))
@@ -491,7 +497,9 @@ router.get('/menuList', function (req, res, next) {
     var arr = []
     querySnapshot.forEach((doc) => {
       console.log(doc.id, " => ", doc.data());
-      arr.push(doc.data())
+      var ob = doc.data()
+      ob.id = doc.id
+      arr.push(ob)
     });
     res.end(JSON.stringify(arr))
 
@@ -635,7 +643,9 @@ router.get('/userSessions', function (req, res, next) {
     var arr = []
     querySnapshot.forEach((doc) => {
       console.log(doc.id, " => ", doc.data());
-      arr.push(doc.data())
+      var ob = doc.data()
+      ob.id = doc.id
+      arr.push(ob)
     });
     res.end(JSON.stringify(arr))
   }).catch((error) => {
@@ -739,7 +749,9 @@ router.get('/userExcercise', function (req, res, next) {
     var arr = []
     querySnapshot.forEach((doc) => {
       console.log(doc.id, " => ", doc.data());
-      arr.push(doc.data())
+      var ob = doc.data()
+      ob.id = doc.id
+      arr.push(ob)
     });
     res.end(JSON.stringify(arr))
   }).catch((error) => {
@@ -849,7 +861,9 @@ router.get('/userStatHistory', function (req, res, next) {
     var arr = []
     querySnapshot.forEach((doc) => {
       console.log(doc.id, " => ", doc.data());
-      arr.push(doc.data())
+      var ob = doc.data()
+      ob.id = doc.id
+      arr.push(ob)
     });
     res.end(JSON.stringify(arr))
   }).catch((error) => {
@@ -948,7 +962,9 @@ router.get('/userStep', function (req, res, next) {
     var arr = []
     querySnapshot.forEach((doc) => {
       console.log(doc.id, " => ", doc.data());
-      arr.push(doc.data())
+      var ob = doc.data()
+      ob.id = doc.id
+      arr.push(ob)
     });
     res.end(JSON.stringify(arr))
   }).catch((error) => {
