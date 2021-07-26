@@ -23,8 +23,8 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// catalog
-router.get('/excercisesCatalog', function (req, res, next) {
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// exc category
+router.get('/excercisesCategory', function (req, res, next) {
 
   admin.firestore().collection("excercises").get().then((querySnapshot) => {
     var arr = []
@@ -46,8 +46,8 @@ router.get('/excercisesCatalog', function (req, res, next) {
 
 });
 
-router.get('/excercisesCatalogDetail', function (req, res, next) {
-  let id = req.query.catalogId
+router.get('/excercisesCategoryDetail', function (req, res, next) {
+  let id = req.query.categoryId
   admin.firestore().collection("excercises").doc(id).get().then((doc) => {
     if (!doc.exists) {
       res.status(500).json({ error: 'Khong ton tai id nay' })
@@ -64,24 +64,25 @@ router.get('/excercisesCatalogDetail', function (req, res, next) {
   });
 });
 
-router.post('/newCatalog', upload.single('photo'), function (req, res, next) {
+router.post('/newCategory', upload.single('photo'), function (req, res, next) {
   // chuan bi data
   let data = req.body
   if (!req.file) {
+    console.log("khong co file")
     res.status(500).json({ error: 'Khong co file' })
     res.end()
   } else {
-    let catalogsRef = admin.firestore().collection("excercises")
-    catalogsRef.add({
+    let categorysRef = admin.firestore().collection("excercises")
+    categorysRef.add({
       name: data.name,
       photoUrl: "https://" + req.hostname + req.file.path.substring(6)
     })
       .then((cataRef) => {
-        console.log("Tao moi catalog thanh cong")
+        console.log("Tao moi category thanh cong")
         res.end(JSON.stringify({ id: cataRef.id }))
       })
       .catch((error) => {
-        console.error("Loi tao moi catalog: ", error)
+        console.error("Loi tao moi category: ", error)
         fs.unlinkSync("./" + req.file.path)
         res.status(500).json({ error: 'loi' })
         res.end()
@@ -91,7 +92,7 @@ router.post('/newCatalog', upload.single('photo'), function (req, res, next) {
 
 });
 
-router.put('/updateCatalog', upload.single('photo'), function (req, res, next) {
+router.put('/updateCategory', upload.single('photo'), function (req, res, next) {
   // chuan bi data
   let data = req.body
   if (!req.file) {
@@ -99,12 +100,12 @@ router.put('/updateCatalog', upload.single('photo'), function (req, res, next) {
     res.status(400).send("Error: No files found")
   } else {
     // cap nhat firestore
-    let catalogRef = admin.firestore().collection("excercises").doc(data.id)
-    catalogRef.get().then((doc) => {
+    let categoryRef = admin.firestore().collection("excercises").doc(data.id)
+    categoryRef.get().then((doc) => {
       if (!doc.exists) {
         console.log('No such document!');
         fs.unlinkSync("./" + req.file.path)
-        res.status(400).send("Error: No Catalog")
+        res.status(400).send("Error: No Category")
       } else {
         console.log('Document data:', doc.data());
         var photoUrl = doc.data().photoUrl
@@ -112,7 +113,7 @@ router.put('/updateCatalog', upload.single('photo'), function (req, res, next) {
         try {
 
           //file removed
-          catalogRef.update({
+          categoryRef.update({
             name: data.name,
             photoUrl: "https://" + req.hostname + req.file.path.substring(6)
           }).then(() => {
@@ -148,15 +149,15 @@ router.put('/updateCatalog', upload.single('photo'), function (req, res, next) {
 });
 
 
-router.delete('/deleteCatalog', function (req, res, next) {
+router.delete('/deleteCategory', function (req, res, next) {
   let id = req.query.id
   // kiem tra ton tai
-  let catalogRef = admin.firestore().collection("excercises").doc(id)
-  catalogRef.get().then((doc) => {
+  let categoryRef = admin.firestore().collection("excercises").doc(id)
+  categoryRef.get().then((doc) => {
     if (!doc.exists) {
-      res.status(400).send("Error: No Catalog")
+      res.status(400).send("Error: No Category")
     } else {
-      catalogRef.delete().then(() => {
+      categoryRef.delete().then(() => {
         try {
           var photoUrl = doc.data().photoUrl
           let oldPhotoPath = './public/data/uploads/' + photoUrl.substring(photoUrl.indexOf("uploads/") + 8)
@@ -167,7 +168,7 @@ router.delete('/deleteCatalog', function (req, res, next) {
           res.end()
         }
       }).catch((error) => {
-        res.status(500).json({ error: 'loi xoa catalog firestore' })
+        res.status(500).json({ error: 'loi xoa category firestore' })
         res.end()
       });
 
@@ -183,7 +184,7 @@ router.delete('/deleteCatalog', function (req, res, next) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// ex_list
 router.get('/excercises', function (req, res, next) {
   let data = req.query
-  admin.firestore().collection("excercises").doc(data.catalogId).collection("ex_list").get().then((querySnapshot) => {
+  admin.firestore().collection("excercises").doc(data.categoryId).collection("ex_list").get().then((querySnapshot) => {
     var arr = []
     querySnapshot.forEach((doc) => {
       console.log(doc.id, " => ", doc.data());
@@ -203,7 +204,7 @@ router.get('/excercises', function (req, res, next) {
 
 router.get('/excercisesDetail', function (req, res, next) {
   let data = req.query
-  admin.firestore().collection("excercises").doc(data.catalogId).collection("ex_list").doc(data.id).get().then((doc) => {
+  admin.firestore().collection("excercises").doc(data.categoryId).collection("ex_list").doc(data.id).get().then((doc) => {
     if (!doc.exists) {
       res.end(JSON.stringify({ error: "khong ton tai id" }))
     } else {
@@ -227,7 +228,7 @@ router.post('/newExcercise', upload.array('picSteps'), function (req, res, next)
   } else {
     var imgUrls = []
     req.files.forEach(img => imgUrls.push("https://" + req.hostname + img.path.substring(6)))
-    let excercisesRef = admin.firestore().collection("excercises").doc(data.catalogId).collection("ex_list")
+    let excercisesRef = admin.firestore().collection("excercises").doc(data.catId).collection("ex_list")
     excercisesRef.add({
       name: data.name,
       picSteps: imgUrls,
@@ -262,7 +263,7 @@ router.put('/updateExcercise', upload.array('picSteps'), function (req, res, nex
     res.status(400).send("Error: No files found")
   } else {
     // cap nhat firestore
-    let excerciseRef = admin.firestore().collection("excercises").doc(data.catalogId).collection("ex_list").doc(id)
+    let excerciseRef = admin.firestore().collection("excercises").doc(data.categoryId).collection("ex_list").doc(id)
     excerciseRef.get().then((doc) => {
       if (!doc.exists) {
         console.log('No such document!---------');
@@ -310,7 +311,7 @@ router.put('/updateExcercise', upload.array('picSteps'), function (req, res, nex
 
 router.delete('/deleteExcercise', function (req, res, next) {
   let id = req.query.id
-  let catId = req.query.catalogId
+  let catId = req.query.categoryId
   // kiem tra ton tai
   let excerciseRef = admin.firestore().collection("excercises").doc(catId).collection("ex_list").doc(id)
   excerciseRef.get().then((doc) => {
@@ -332,7 +333,7 @@ router.delete('/deleteExcercise', function (req, res, next) {
             res.end()
           }
         }).catch((error) => {
-          res.status(500).json({ error: 'loi xoa catalog' })
+          res.status(500).json({ error: 'loi xoa category' })
           res.end()
         });
       } catch (err) {
@@ -368,8 +369,8 @@ router.get('/nutritionCategory', function (req, res, next) {
   });
 });
 
-router.get('/nutritionCatalogDetail', function (req, res, next) {
-  let id = req.query.catalogId
+router.get('/nutritionCategoryDetail', function (req, res, next) {
+  let id = req.query.categoryId
   admin.firestore().collection("nutrition").doc(id).get().then((doc) => {
     if (!doc.exists) {
       res.status(500).json({ error: 'Khong ton tai nutrition id nay' })
@@ -385,7 +386,7 @@ router.get('/nutritionCatalogDetail', function (req, res, next) {
   });
 });
 
-router.post('/newNutritionCatalog', upload.single('photo'), function (req, res, next) {
+router.post('/newNutritionCategory', upload.single('photo'), function (req, res, next) {
   // chuan bi data
   let data = req.body
   if (!req.file) {
@@ -397,11 +398,11 @@ router.post('/newNutritionCatalog', upload.single('photo'), function (req, res, 
       photoUrl: "https://" + req.hostname + req.file.path.substring(6)
     })
       .then((nutriRef) => {
-        console.log("Tao moi nutrition catalog thanh cong")
+        console.log("Tao moi nutrition category thanh cong")
         res.end(JSON.stringify({ id: nutriRef.id }))
       })
       .catch((error) => {
-        console.error("Loi tao moi nutrition catalog: ", error)
+        console.error("Loi tao moi nutrition category: ", error)
         fs.unlinkSync("./" + req.file.path)
         res.status(500).json({ error: 'loi set nutrition' })
         res.end()
@@ -410,7 +411,7 @@ router.post('/newNutritionCatalog', upload.single('photo'), function (req, res, 
 
 });
 
-router.put('/updateNutritionCatalog', upload.single('photo'), function (req, res, next) {
+router.put('/updateNutritionCategory', upload.single('photo'), function (req, res, next) {
   // chuan bi data
   let data = req.body
   if (!req.file) {
@@ -418,18 +419,18 @@ router.put('/updateNutritionCatalog', upload.single('photo'), function (req, res
     res.status(400).send("Error: No files found")
   } else {
     // cap nhat firestore
-    let catalogRef = admin.firestore().collection("nutrition").doc(data.id)
-    catalogRef.get().then((doc) => {
+    let categoryRef = admin.firestore().collection("nutrition").doc(data.id)
+    categoryRef.get().then((doc) => {
       if (!doc.exists) {
         console.log('No such document!');
         fs.unlinkSync("./" + req.file.path)
-        res.status(400).send("Error: No Catalog")
+        res.status(400).send("Error: No Category")
       } else {
         console.log('Document data:', doc.data());
         var photoUrl = doc.data().photoUrl
         let oldPhotoPath = './public/data/uploads/' + photoUrl.substring(photoUrl.indexOf("uploads/") + 8)
 
-        catalogRef.update({
+        categoryRef.update({
           name: data.name,
           photoUrl: "https://" + req.hostname + req.file.path.substring(6)
         }).then(() => {
@@ -459,15 +460,15 @@ router.put('/updateNutritionCatalog', upload.single('photo'), function (req, res
   }
 });
 
-router.delete('/deleteNutritionCatalog', function (req, res, next) {
+router.delete('/deleteNutritionCategory', function (req, res, next) {
   let id = req.query.id
   // kiem tra ton tai
-  let catalogRef = admin.firestore().collection("nutrition").doc(id)
-  catalogRef.get().then((doc) => {
+  let categoryRef = admin.firestore().collection("nutrition").doc(id)
+  categoryRef.get().then((doc) => {
     if (!doc.exists) {
       res.status(400).send("Error: No Nutrition")
     } else {
-      catalogRef.delete().then(() => {
+      categoryRef.delete().then(() => {
         try {
           var photoUrl = doc.data().photoUrl
           let oldPhotoPath = './public/data/uploads/' + photoUrl.substring(photoUrl.indexOf("uploads/") + 8)
@@ -478,7 +479,7 @@ router.delete('/deleteNutritionCatalog', function (req, res, next) {
           res.end()
         }
       }).catch((error) => {
-        res.status(500).json({ error: 'loi xoa catalog firestore' })
+        res.status(500).json({ error: 'loi xoa category firestore' })
         res.end()
       });
 
@@ -623,7 +624,7 @@ router.delete('/deleteMenu', function (req, res, next) {
           res.end()
         }
       }).catch((error) => {
-        res.status(500).json({ error: 'loi xoa catalog' })
+        res.status(500).json({ error: 'loi xoa category' })
         res.end()
       });
 
@@ -700,7 +701,7 @@ router.put('/updateSession', function (req, res, next) {
   sessionRef.get().then((doc) => {
     if (!doc.exists) {
       console.log('No such document!');
-      res.status(400).send("Error: No Catalog")
+      res.status(400).send("Error: No Category")
     } else {
       sessionRef.update({
         name: data.name
@@ -730,7 +731,7 @@ router.delete('/deleteSession', function (req, res, next) {
       sessionRef.delete().then(() => {
         res.end(JSON.stringify({ id: data.sessionId }))
       }).catch((error) => {
-        res.status(500).json({ error: 'loi xoa catalog firestore' })
+        res.status(500).json({ error: 'loi xoa category firestore' })
         res.end()
       });
     }
